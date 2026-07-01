@@ -36,17 +36,39 @@ def send_telegram_message(text: str) -> None:
     response.raise_for_status()
 
 
-def sentiment_icon(score: float) -> str:
+def sentiment_icon_from_score(value) -> str:
+    try:
+        score = float(value)
+    except (TypeError, ValueError):
+        return "⚪"
+
     if score <= 24:
-        return "🔴"
+        return "🔴"   # Extreme Fear
     elif score <= 44:
-        return "🟠"
+        return "🟠"   # Fear
     elif score <= 55:
-        return "🟡"
+        return "🟡"   # Neutral
     elif score <= 75:
+        return "🟢"   # Greed
+    else:
+        return "🟣"   # Extreme Greed
+
+
+def sentiment_icon_from_rating(rating: str) -> str:
+    rating = str(rating).lower()
+
+    if "extreme fear" in rating:
+        return "🔴"
+    elif "fear" in rating:
+        return "🟠"
+    elif "neutral" in rating:
+        return "🟡"
+    elif "extreme greed" in rating:
+        return "🟣"
+    elif "greed" in rating:
         return "🟢"
     else:
-        return "🟣"
+        return "⚪"
 
 def main() -> None:
     data = fear_greed.get()
@@ -64,36 +86,51 @@ def main() -> None:
     history = data.get("history", {})
     indicators = data.get("indicators", {})
 
-    icon = sentiment_icon(score)
+    icon = sentiment_icon_from_score(score)
+    rating_icon = sentiment_icon_from_rating(rating)
 
     message = (
         f"{icon} <b>Fear & Greed Index</b>\n\n"
-        f"Index: <b>{html.escape(str(score))}/100 {html.escape(rating)}</b>\n"
+        f"Index: <b>{html.escape(str(score))}/100 {rating_icon} {html.escape(rating)}</b>\n"
         f"Updated: {html.escape(updated_text)}\n\n"
         "<b>History</b>\n"
-        f"1W: {html.escape(str(history.get('1w', 'N/A')))}\n"
-        f"1M: {html.escape(str(history.get('1m', 'N/A')))}\n"
-        f"3M: {html.escape(str(history.get('3m', 'N/A')))}\n"
-        f"6M: {html.escape(str(history.get('6m', 'N/A')))}\n"
-        f"1Y: {html.escape(str(history.get('1y', 'N/A')))}\n\n"
-        "<b>Main indicators</b>\n"
     )
+
+    history_labels = {
+        "1w": "1W",
+        "1m": "1M",
+        "3m": "3M",
+        "6m": "6M",
+        "1y": "1Y",
+    }
+
+    for key, label in history_labels.items():
+        value = history.get(key, "N/A")
+        value_icon = sentiment_icon_from_score(value)
+
+        message += (
+            f"{value_icon} {label}: "
+            f"{html.escape(str(value))}\n"
+        )
+
+    message += "\n<b>Main indicators</b>\n"
 
     for name, item in indicators.items():
         indicator_score = item.get("score", "N/A")
         indicator_rating = str(item.get("rating", "N/A")).title()
 
+        score_icon = sentiment_icon_from_score(indicator_score)
+        rating_icon = sentiment_icon_from_rating(indicator_rating)
+
         clean_name = name.replace("_", " ").title()
 
         message += (
-            f"- {html.escape(clean_name)}: "
+            f"{score_icon} {html.escape(clean_name)}: "
             f"{html.escape(str(indicator_score))} "
-            f"({html.escape(indicator_rating)})\n"
+            f"{rating_icon} ({html.escape(indicator_rating)})\n\n"
         )
 
-    message += (
-        "Source: CNN Fear & Greed Index"
-    )
+    message += "Source: CNN Fear & Greed Index"
 
     send_telegram_message(message)
     print("Telegram message sent successfully.")
