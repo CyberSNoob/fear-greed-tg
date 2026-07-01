@@ -36,6 +36,18 @@ def send_telegram_message(text: str) -> None:
     response.raise_for_status()
 
 
+def sentiment_icon(score: float) -> str:
+    if score <= 24:
+        return "🔴"
+    elif score <= 44:
+        return "🟠"
+    elif score <= 55:
+        return "🟡"
+    elif score <= 75:
+        return "🟢"
+    else:
+        return "🟣"
+
 def main() -> None:
     data = fear_greed.get()
 
@@ -52,10 +64,11 @@ def main() -> None:
     history = data.get("history", {})
     indicators = data.get("indicators", {})
 
+    icon = sentiment_icon(score)
+
     message = (
-        "<b>Stock Market Fear & Greed Index</b>\n\n"
-        f"Value: <b>{html.escape(str(score))}/100</b>\n"
-        f"Classification: <b>{html.escape(rating)}</b>\n"
+        f"{icon} <b>Fear & Greed Index</b>\n\n"
+        f"Index: <b>{html.escape(str(score))}/100 {html.escape(rating)}</b>\n"
         f"Updated: {html.escape(updated_text)}\n\n"
         "<b>History</b>\n"
         f"1W: {html.escape(str(history.get('1w', 'N/A')))}\n"
@@ -79,8 +92,6 @@ def main() -> None:
         )
 
     message += (
-        "\n0 = Extreme Fear\n"
-        "100 = Extreme Greed\n\n"
         "Source: CNN Fear & Greed Index"
     )
 
