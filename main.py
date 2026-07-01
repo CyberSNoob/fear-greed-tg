@@ -107,7 +107,7 @@ def main() -> None:
 
         message += (
             f"{score_icon} {html.escape(clean_name)}: "
-            f"<b>{html.escape(str(indicator_score))}</b>(<b>{html.escape(indicator_rating)}</b>)\n\n"
+            f"<b>{html.escape(str(indicator_score))}</b> (<b>{html.escape(indicator_rating)}</b>)\n\n"
         )
 
     message += "Source: CNN Fear & Greed Index"
