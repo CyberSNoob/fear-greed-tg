@@ -1,11 +1,11 @@
 import os
 import html
 import requests
+import fear_greed
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
 
-FNG_URL = "https://api.alternative.me/fng/?limit=1"
 VIENNA_TZ = ZoneInfo("Europe/Vienna")
 
 
@@ -14,21 +14,6 @@ def get_env(name: str) -> str:
     if not value:
         raise RuntimeError(f"Missing environment variable: {name}")
     return value
-
-
-def get_fear_greed_index() -> dict:
-    response = requests.get(FNG_URL, timeout=20)
-    response.raise_for_status()
-
-    data = response.json()["data"][0]
-    timestamp = int(data["timestamp"])
-    updated_vienna = datetime.fromtimestamp(timestamp, VIENNA_TZ)
-
-    return {
-        "value": data["value"],
-        "classification": data["value_classification"],
-        "updated": updated_vienna.strftime("%Y-%m-%d %H:%M %Z"),
-    }
 
 
 def send_telegram_message(text: str) -> None:
@@ -52,16 +37,51 @@ def send_telegram_message(text: str) -> None:
 
 
 def main() -> None:
-    fng = get_fear_greed_index()
+    data = fear_greed.get()
+
+    score = round(float(data["score"]), 2)
+    rating = str(data["rating"]).title()
+
+    timestamp = data.get("timestamp")
+    if timestamp:
+        updated = datetime.fromisoformat(timestamp).astimezone(VIENNA_TZ)
+        updated_text = updated.strftime("%Y-%m-%d %H:%M %Z")
+    else:
+        updated_text = "Unknown"
+
+    history = data.get("history", {})
+    indicators = data.get("indicators", {})
 
     message = (
-        "<b>Crypto Fear & Greed Index</b>\n\n"
-        f"Value: <b>{html.escape(str(fng['value']))}/100</b>\n"
-        f"Classification: <b>{html.escape(str(fng['classification']))}</b>\n"
-        f"Updated: {html.escape(str(fng['updated']))}\n\n"
-        "0 = Extreme Fear\n"
+        "<b>Stock Market Fear & Greed Index</b>\n\n"
+        f"Value: <b>{html.escape(str(score))}/100</b>\n"
+        f"Classification: <b>{html.escape(rating)}</b>\n"
+        f"Updated: {html.escape(updated_text)}\n\n"
+        "<b>History</b>\n"
+        f"1W: {html.escape(str(history.get('1w', 'N/A')))}\n"
+        f"1M: {html.escape(str(history.get('1m', 'N/A')))}\n"
+        f"3M: {html.escape(str(history.get('3m', 'N/A')))}\n"
+        f"6M: {html.escape(str(history.get('6m', 'N/A')))}\n"
+        f"1Y: {html.escape(str(history.get('1y', 'N/A')))}\n\n"
+        "<b>Main indicators</b>\n"
+    )
+
+    for name, item in indicators.items():
+        indicator_score = item.get("score", "N/A")
+        indicator_rating = str(item.get("rating", "N/A")).title()
+
+        clean_name = name.replace("_", " ").title()
+
+        message += (
+            f"- {html.escape(clean_name)}: "
+            f"{html.escape(str(indicator_score))} "
+            f"({html.escape(indicator_rating)})\n"
+        )
+
+    message += (
+        "\n0 = Extreme Fear\n"
         "100 = Extreme Greed\n\n"
-        "Source: Alternative.me"
+        "Source: CNN Fear & Greed Index"
     )
 
     send_telegram_message(message)
