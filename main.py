@@ -53,23 +53,6 @@ def sentiment_icon_from_score(value) -> str:
     else:
         return "🟣"   # Extreme Greed
 
-
-def sentiment_icon_from_rating(rating: str) -> str:
-    rating = str(rating).lower()
-
-    if "extreme fear" in rating:
-        return "🔴"
-    elif "fear" in rating:
-        return "🟠"
-    elif "neutral" in rating:
-        return "🟡"
-    elif "extreme greed" in rating:
-        return "🟣"
-    elif "greed" in rating:
-        return "🟢"
-    else:
-        return "⚪"
-
 def main() -> None:
     data = fear_greed.get()
 
@@ -87,11 +70,10 @@ def main() -> None:
     indicators = data.get("indicators", {})
 
     icon = sentiment_icon_from_score(score)
-    rating_icon = sentiment_icon_from_rating(rating)
 
     message = (
         f"{icon} <b>Fear & Greed Index</b>\n\n"
-        f"Index: <b>{html.escape(str(score))}/100 {rating_icon} {html.escape(rating)}</b>\n"
+        f"Index: <b>{html.escape(str(score))}/100 {html.escape(rating)}</b>\n"
         f"Updated: {html.escape(updated_text)}\n\n"
         "<b>History</b>\n"
     )
@@ -110,7 +92,7 @@ def main() -> None:
 
         message += (
             f"{value_icon} {label}: "
-            f"{html.escape(str(value))}\n"
+            f"<b>{html.escape(str(value))}</b>\n"
         )
 
     message += "\n<b>Main indicators</b>\n"
@@ -120,14 +102,12 @@ def main() -> None:
         indicator_rating = str(item.get("rating", "N/A")).title()
 
         score_icon = sentiment_icon_from_score(indicator_score)
-        rating_icon = sentiment_icon_from_rating(indicator_rating)
 
         clean_name = name.replace("_", " ").title()
 
         message += (
             f"{score_icon} {html.escape(clean_name)}: "
-            f"{html.escape(str(indicator_score))} "
-            f"{rating_icon} ({html.escape(indicator_rating)})\n\n"
+            f"{html.escape(str(indicator_score))} ({html.escape(indicator_rating)})\n\n"
         )
 
     message += "Source: CNN Fear & Greed Index"
