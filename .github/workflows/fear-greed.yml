@@ -2,8 +2,7 @@ name: Send Fear and Greed Index
 
 on:
   schedule:
-    - cron: "15 8-22 * * 1-5"
-      timezone: "Europe/Vienna"
+    - cron: "15 6-21 * * 1-5"
   workflow_dispatch:
 
 jobs:

@@ -1,13 +1,22 @@
 import os
 import html
-import requests
-import fear_greed
 from datetime import datetime
 from zoneinfo import ZoneInfo
+import requests
+import fear_greed
+from dotenv import load_dotenv
 
+load_dotenv()
 
 VIENNA_TZ = ZoneInfo("Europe/Vienna")
 
+def should_send_now() -> bool:
+    now = datetime.now(VIENNA_TZ)
+
+    is_weekday = now.weekday() < 5
+    is_allowed_hour = 8 <= now.hour <= 22
+
+    return is_weekday and is_allowed_hour
 
 def get_env(name: str) -> str:
     value = os.getenv(name)
@@ -54,6 +63,12 @@ def sentiment_icon_from_score(value) -> str:
         return "🟣"   # Extreme Greed
 
 def main() -> None:
+    now = datetime.now(VIENNA_TZ)
+
+    if not should_send_now():
+        print(f"Skipped. Outside allowed Vienna window: {now.strftime('%Y-%m-%d %H:%M %Z')}")
+        return
+
     data = fear_greed.get()
 
     score = round(float(data["score"]), 2)
